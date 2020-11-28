@@ -75,91 +75,88 @@ proc loadDepartures(crs: string): Station =
 
     var actualIterValue = 0
     for s in 0..len(servicesXML)-1:
+        let serviceXML = servicesXML[s]
+
+        # If the service terminates, ignore it
+        if serviceXML.findAll("ServiceType")[0].attr("Type") == "Terminating":
+            continue
+
+        # Put together the list of stops
+        var callingPointsObject = serviceXML.findAll("Dest1CallingPoints")[0].findAll("CallingPoint")
+        var stops: seq[CallingPoint] = newSeq[CallingPoint](parseInt(serviceXML.findAll("Dest1CallingPoints")[0].attr("NumCallingPoints")) + 1)
+
+        if len(stops) > 1:
+            for i in 0..len(callingPointsObject)-1:
+                stops[i] = CallingPoint(
+                    name: callingPointsObject[i].attr("Name"),
+                    crs: callingPointsObject[i].attr("crs"),
+                    scheduledDeparture: parseTime(callingPointsObject[i].attr("ttdep")),
+                    expectedDeparture: parseTime(callingPointsObject[i].attr("etdep"))
+                )
         try:
-            let serviceXML = servicesXML[s]
-
-            # If the service terminates, ignore it
-            if serviceXML.findAll("ServiceType")[0].attr("Type") == "Terminating":
-                continue
-
-            # Put together the list of stops
-            var callingPointsObject = serviceXML.findAll("Dest1CallingPoints")[0].findAll("CallingPoint")
-            var stops: seq[CallingPoint] = newSeq[CallingPoint](parseInt(serviceXML.findAll("Dest1CallingPoints")[0].attr("NumCallingPoints")) + 1)
-
-            if len(stops) > 1:
-                for i in 0..len(callingPointsObject)-1:
-                    stops[i] = CallingPoint(
-                        name: callingPointsObject[i].attr("Name"),
-                        crs: callingPointsObject[i].attr("crs"),
-                        scheduledDeparture: parseTime(callingPointsObject[i].attr("ttdep")),
-                        expectedDeparture: parseTime(callingPointsObject[i].attr("etdep"))
-                    )
+            stops[len(stops) - 1] = CallingPoint(
+                name: serviceXML.findAll("Destination1")[0].attr("name"),
+                crs: serviceXML.findAll("Destination1")[0].attr("crs"),
+                scheduledDeparture: parseTime(serviceXML.findAll("Destination1")[0].attr("ttarr")),
+                expectedDeparture: parseTime(serviceXML.findAll("Destination1")[0].attr("etarr"))
+            )
+        except:
             try:
                 stops[len(stops) - 1] = CallingPoint(
                     name: serviceXML.findAll("Destination1")[0].attr("name"),
                     crs: serviceXML.findAll("Destination1")[0].attr("crs"),
                     scheduledDeparture: parseTime(serviceXML.findAll("Destination1")[0].attr("ttarr")),
-                    expectedDeparture: parseTime(serviceXML.findAll("Destination1")[0].attr("etarr"))
+                    expectedDeparture: parseTime(serviceXML.findAll("Destination1")[0].attr("ttarr"))
                 )
             except:
-                try:
-                    stops[len(stops) - 1] = CallingPoint(
-                        name: serviceXML.findAll("Destination1")[0].attr("name"),
-                        crs: serviceXML.findAll("Destination1")[0].attr("crs"),
-                        scheduledDeparture: parseTime(serviceXML.findAll("Destination1")[0].attr("ttarr")),
-                        expectedDeparture: parseTime(serviceXML.findAll("Destination1")[0].attr("ttarr"))
-                    )
-                except:
-                    discard "Ignore exception"
-
-            # Parse the last report of the train
-            var report = ""
-            if serviceXML.findAll("LastReport")[0].attr("type") == "T":
-                report = "At " & serviceXML.findAll("LastReport")[0].attr("station1") & " (" & timeFmt(parseTime(serviceXML.findAll("LastReport")[0].attr("time"))) & ")"
-            elif serviceXML.findAll("LastReport")[0].attr("type") == "B":
-                report = "Between " & serviceXML.findAll("LastReport")[0].attr("station1") & " and " & serviceXML.findAll("LastReport")[0].attr("station2") & " (" & timeFmt(parseTime(serviceXML.findAll("LastReport")[0].attr("time"))) & ")"
-            else:
-                report = "No report."
-
-            # Parse the platform of the train
-            var platform = serviceXML.findAll("Platform")[0].attr("Number")
-            if platform == "":
-                platform = "?"
-
-            # If the expected departure is different to the timetabled departure, make it known
-            var expectedDeparture = parseTime(serviceXML.findAll("DepartTime")[0].attr("time"))
-            try:
-                expectedDeparture = parseTime(serviceXML.findAll("ExpectedDepartTime")[0].attr("time"))
-            except:
                 discard "Ignore exception"
 
-            var coaches = 0
-            try:
-                coaches = parseInt(serviceXML.findAll("Coaches1")[0].innerText)
-            except:
-                discard "Ignore exception"
+        # Parse the last report of the train
+        var report = ""
+        if serviceXML.findAll("LastReport")[0].attr("type") == "T":
+            report = "At " & serviceXML.findAll("LastReport")[0].attr("station1") & " (" & timeFmt(parseTime(serviceXML.findAll("LastReport")[0].attr("time"))) & ")"
+        elif serviceXML.findAll("LastReport")[0].attr("type") == "B":
+            report = "Between " & serviceXML.findAll("LastReport")[0].attr("station1") & " and " & serviceXML.findAll("LastReport")[0].attr("station2") & " (" & timeFmt(parseTime(serviceXML.findAll("LastReport")[0].attr("time"))) & ")"
+        else:
+            report = "No report."
 
-            # Put everything together into a Service object
-            services[actualIterValue] = Service(
-                destination: serviceXML.findAll("Destination1")[0].attr("name"),
-                destinationCRS: serviceXML.findAll("Destination1")[0].attr("crs"),
-                origin: serviceXML.findAll("Origin1")[0].attr("name"),
-                scheduledDeparture: parseTime(serviceXML.findAll("DepartTime")[0].attr("time")),
-                expectedDeparture: expectedDeparture,
-                delay: parseInt("0" & serviceXML.findAll("Delay")[0].attr("Minutes")),
-                delayCause: noneIfNotFound(serviceXML, "DelayCause"),
-                platform: platform,
-                platformComment: noneIfNotFound(serviceXML, "PlatformComment1") & " " & noneIfNotFound(serviceXML, "PlatformComment2"),
-                operator: serviceXML.findAll("Operator")[0].attr("name"),
-                trainComment: noneIfNotFound(serviceXML, "AssociatedPageNotices"),
-                lastReport: report,
-                carriageCount: coaches,
-                callingPoints: stops
-            )
+        # Parse the platform of the train
+        var platform = serviceXML.findAll("Platform")[0].attr("Number")
+        if platform == "":
+            platform = "?"
 
-            actualIterValue += 1
+        # If the expected departure is different to the timetabled departure, make it known
+        var expectedDeparture = parseTime(serviceXML.findAll("DepartTime")[0].attr("time"))
+        try:
+            expectedDeparture = parseTime(serviceXML.findAll("ExpectedDepartTime")[0].attr("time"))
         except:
-            echo servicesXML[s]
+            discard "Ignore exception"
+
+        var coaches = 0
+        try:
+            coaches = parseInt(serviceXML.findAll("Coaches1")[0].innerText)
+        except:
+            discard "Ignore exception"
+
+        # Put everything together into a Service object
+        services[actualIterValue] = Service(
+            destination: serviceXML.findAll("Destination1")[0].attr("name"),
+            destinationCRS: serviceXML.findAll("Destination1")[0].attr("crs"),
+            origin: serviceXML.findAll("Origin1")[0].attr("name"),
+            scheduledDeparture: parseTime(serviceXML.findAll("DepartTime")[0].attr("time")),
+            expectedDeparture: expectedDeparture,
+            delay: parseInt("0" & serviceXML.findAll("Delay")[0].attr("Minutes")),
+            delayCause: noneIfNotFound(serviceXML, "DelayCause"),
+            platform: platform,
+            platformComment: noneIfNotFound(serviceXML, "PlatformComment1") & " " & noneIfNotFound(serviceXML, "PlatformComment2"),
+            operator: serviceXML.findAll("Operator")[0].attr("name"),
+            trainComment: noneIfNotFound(serviceXML, "AssociatedPageNotices"),
+            lastReport: report,
+            carriageCount: coaches,
+            callingPoints: stops
+        )
+
+        actualIterValue += 1
 
     # Return a Station object with the name, CRS code and the sequence of Service objects
     return Station(

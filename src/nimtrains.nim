@@ -2,8 +2,9 @@ include api # Import procs from api.nim
 import terminal # For coloring text
 import strutils # For string stuff
 import strformat # For more string stuff
-import os # For printing stuff I think
+import os
 
+# Little proc to write coloured text to the terminal
 proc coloredWrite(textToWrite: string, color: enum = fgWhite) = 
     setForegroundColor(color)
     setStyle({styleBright})

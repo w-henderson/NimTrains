@@ -29,3 +29,6 @@ You might've seen my other project, PyTrains, which provides an identical CLI to
 | ❌ Requires Python (>100MB) and 6 dependencies | ✔️ **No dependencies**, works out-of-the-box |
 
 In short, use PyTrains if you want access to the Python library to use in your own code, but if you're only looking for a CLI to access realtime UK train information, NimTrains' massive speed advantage makes it a better option.
+
+## Building Yourself
+It's very easy to build NimTrains yourself as it doesn't have any dependencies. You can use the supplied `make.bat` file to build for release or run `nimble build` to use Nimble.
