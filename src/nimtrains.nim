@@ -64,7 +64,7 @@ proc renderStation(station: Station) =
 proc renderAdditionalInfo(service: Service, highlight: string = "") =
     let time = timeFmt(service.expectedDeparture)
     let dest = service.destination
-    let cc = service.carriageCount
+    let cc = if service.carriageCount != 0: $service.carriageCount else: "?"
     let plat = service.platform
     coloredWrite(&"\n  == {time} to {dest} ({cc} carriages, platform {plat}) ==\n\n", fgCyan)
 
