@@ -138,6 +138,10 @@ proc loadDepartures(crs: string): Station =
         except:
             discard "Ignore exception"
 
+        var delay = 0
+        if serviceXML.findAll("Delay")[0].attr("Minutes") != "":
+            delay = parseInt(serviceXML.findAll("Delay")[0].attr("Minutes"))
+
         # Put everything together into a Service object
         services[actualIterValue] = Service(
             destination: serviceXML.findAll("Destination1")[0].attr("name"),
@@ -145,7 +149,7 @@ proc loadDepartures(crs: string): Station =
             origin: serviceXML.findAll("Origin1")[0].attr("name"),
             scheduledDeparture: parseTime(serviceXML.findAll("DepartTime")[0].attr("time")),
             expectedDeparture: expectedDeparture,
-            delay: parseInt("0" & serviceXML.findAll("Delay")[0].attr("Minutes")),
+            delay: delay,
             delayCause: noneIfNotFound(serviceXML, "DelayCause"),
             platform: platform,
             platformComment: noneIfNotFound(serviceXML, "PlatformComment1") & " " & noneIfNotFound(serviceXML, "PlatformComment2"),
