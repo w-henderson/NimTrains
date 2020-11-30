@@ -87,12 +87,20 @@ proc loadDepartures(crs: string): Station =
 
         if len(stops) > 1:
             for i in 0..len(callingPointsObject)-1:
-                stops[i] = CallingPoint(
-                    name: callingPointsObject[i].attr("Name"),
-                    crs: callingPointsObject[i].attr("crs"),
-                    scheduledDeparture: parseTime(callingPointsObject[i].attr("ttdep")),
-                    expectedDeparture: parseTime(callingPointsObject[i].attr("etdep"))
-                )
+                try:
+                    stops[i] = CallingPoint(
+                        name: callingPointsObject[i].attr("Name"),
+                        crs: callingPointsObject[i].attr("crs"),
+                        scheduledDeparture: parseTime(callingPointsObject[i].attr("ttdep")),
+                        expectedDeparture: parseTime(callingPointsObject[i].attr("etdep"))
+                    )
+                except:
+                    stops[i] = CallingPoint(
+                        name: callingPointsObject[i].attr("Name"),
+                        crs: callingPointsObject[i].attr("crs"),
+                        scheduledDeparture: parseTime(callingPointsObject[i].attr("ttdep")),
+                        expectedDeparture: parseTime(callingPointsObject[i].attr("ttdep"))
+                    )
         try:
             stops[len(stops) - 1] = CallingPoint(
                 name: serviceXML.findAll("Destination1")[0].attr("name"),

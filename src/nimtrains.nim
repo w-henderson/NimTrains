@@ -90,7 +90,7 @@ if paramCount() == 1:
     try:
         let services = loadDepartures(tryToParseName(paramStr(1)))
         renderStation(services)
-    except:
+    except StationNotFound:
         coloredWrite("[ERROR]: Can't find the specified station! If it's a full name instead of a CRS code, make sure it's in quote marks.\n", fgRed)
 
 # If given the wrong number of arguments throw an error

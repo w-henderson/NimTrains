@@ -3400,6 +3400,8 @@ var stationsRaw = """{
 import json
 import strutils
 
+type StationNotFound = object of ValueError
+
 # Parse the JSON stations data
 let stations: JsonNode = parseJson(stationsRaw)
 
@@ -3407,4 +3409,4 @@ proc nameToCrs(name: string): string =
     for stat in stations.keys:
         if stations[stat]["name"].getStr().toLower() == name.toLower():
             return stat
-    raise newException(Exception, "Target doesn't exist.")
+    raise newException(StationNotFound, "Station not found.")
