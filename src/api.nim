@@ -68,7 +68,7 @@ proc loadDepartures(crs: string): Station =
 
     # Ensure the sequence only has space for trains that don't terminate
     for service in servicesXML:
-        if service.findAll("ServiceType")[0].attr("Type") == "Terminating":
+        if service.findAll("ServiceType")[0].attr("Type") == "Terminating" or service.findAll("ServiceStatus")[0].attr("Status") == "Cancelled":
             servicesCount -= 1
 
     var services: seq[Service] = newSeq[Service](servicesCount)
@@ -78,7 +78,7 @@ proc loadDepartures(crs: string): Station =
         let serviceXML = servicesXML[s]
 
         # If the service terminates, ignore it
-        if serviceXML.findAll("ServiceType")[0].attr("Type") == "Terminating":
+        if serviceXML.findAll("ServiceType")[0].attr("Type") == "Terminating" or serviceXML.findAll("ServiceStatus")[0].attr("Status") == "Cancelled":
             continue
 
         # Put together the list of stops
